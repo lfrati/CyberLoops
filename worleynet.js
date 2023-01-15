@@ -47,15 +47,6 @@ class WNetwork {
             line(x, y, nx, ny);
           }
         }
-
-        // check connections to centroids
-        for (let centroid of centroids) {
-          let nx = centroid.x;
-          let ny = centroid.y;
-          let d = dist(x, y, nx, ny);
-          stroke(200, ((1.5 * this.s * 2 - d) / (1.5 * this.s * 2)) * 180);
-          line(x, y, nx, ny);
-        }
       }
     }
   }

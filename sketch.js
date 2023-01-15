@@ -44,11 +44,11 @@ const features = [
 ];
 
 const Nfeatures = features.length * 2; // 2 hands
-const worleySpacing = 80;
+const worleySpacing = 100;
 
 function setup() {
-  frameRate(30);
-  pixelDensity(2);
+  frameRate(60);
+  pixelDensity(1);
   strokeCap(ROUND);
   createCanvas(windowWidth, windowHeight);
   initModel();
@@ -119,8 +119,6 @@ function draw() {
     image(video, 0, 0, width, height); // show user
   }
 
-  //centroids = computeCentroids();
-
   network.update(frameCount / NETWORK_SLOWDOWN);
   network.show();
 
@@ -154,18 +152,6 @@ function draw() {
 
   // --------------- BELOW HERE 2 HANDS HAVE BEEN DETECTED
 
-  // const d = dist(
-  //   centroids[0].x,
-  //   centroids[0].y,
-  //   centroids[1].x,
-  //   centroids[1].y
-  // );
-  // if (d < 200) {
-  //   console.log(d);
-  //   console.log("false detection");
-  //   return;
-  // }
-
   if (!detecting) {
     // STATE: NO DETECTION -> DETECTION
     detecting = true;
@@ -174,33 +160,6 @@ function draw() {
 
   floop.compute(detections, DETECT_SPEED);
 }
-
-// function computeCentroids() {
-//   const centroids = [];
-//   for (let hand of detections.multiHandLandmarks) {
-//     let vec = createVector(hand[0].x, hand[0].y);
-//     let N = hand.length;
-//     for (let i = 1; i < N; i++) {
-//       vec.x += hand[i].x;
-//       vec.y += hand[i].y;
-//     }
-//     vec.x /= N;
-//     vec.x *= width;
-//     vec.y /= N;
-//     vec.y *= height;
-//     centroids.push(vec);
-//   }
-
-//   if (DEBUG) {
-//     push();
-//     stroke("white");
-//     strokeWeight(3);
-//     line(centroids[0].x, centroids[0].y, centroids[1].x, centroids[1].y);
-//     pop();
-//   }
-
-//   return centroids;
-// }
 
 class FourierLoop {
   constructor(nfeats) {
