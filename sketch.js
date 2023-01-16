@@ -5,7 +5,21 @@ let particles;
 let theShader;
 let shaderTexture;
 let detecting = false;
-//let centroids = [];
+/*
+LOG:
+15/01/2023:
+- Implemented fullscreen + resize. Had to re-initialize shader and worleynet with new size.
+- Hide cursor
+
+TODO:
+- window.location.reload() to periodically reload the sketch, to avoid nasty leaks.
+- I still haven't managed to track down that weird bug that sometimes make the sketch disappear. Haven't seen it strike on windows yet.
+- Spiky knuckles bug?
+- Cam orientation: fix? just deal with it sideways?
+- Cam aspect ratio: stuff looks distorted?
+- Sparks too bright? Adjust color or number?
+- After changing the fps + pixelDensity does stuff move too fast? 
+*/
 
 const DEBUG = false;
 
@@ -46,23 +60,38 @@ const features = [
 const Nfeatures = features.length * 2; // 2 hands
 const worleySpacing = 100;
 
-function setup() {
-  frameRate(60);
-  pixelDensity(1);
-  strokeCap(ROUND);
-  createCanvas(windowWidth, windowHeight);
-  initModel();
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  init();
+}
 
-  // size, border, foreground, background
-  logo = new Logo(20, 8, 180, -1);
+function mousePressed() {
+  let fs = fullscreen();
+  fullscreen(!fs);
+  //document.querySelector("body").webkitRequestFullscreen();
+}
 
+function init() {
   shaderTexture = createGraphics(width, height, WEBGL);
   theShader = initShader(shaderTexture);
   particles = new Particles(8, 0.5);
-
   floop = new FourierLoop(Nfeatures);
-
   network = new WNetwork(worleySpacing, 200, width, height);
+}
+
+function setup() {
+  fullscreen();
+  frameRate(60);
+  pixelDensity(1);
+  noCursor();
+  strokeCap(ROUND);
+  createCanvas(windowWidth, windowHeight);
+  initModel();
+  
+  // size, border, foreground, background
+  logo = new Logo(20, 8, 180, -1);
+
+  init();
 }
 
 function draw() {
