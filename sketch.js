@@ -1,5 +1,6 @@
 let T = 0;
 let detections = undefined;
+let processed = true;
 // let remote = true;
 let particles;
 let theShader;
@@ -131,10 +132,6 @@ function draw() {
     floop.resampleIdle();
   }
 
-  // // SELFIE MIRRORING
-  // translate(width, 0); // move to far corner
-  // scale(-1.0, 1.0); // flip x-axis backwards
-
   let data = particles.prepareUniforms();
   // PARTICLES SHADER
   shaderTexture.noStroke();
@@ -163,6 +160,7 @@ function draw() {
   push();
   translate(width / 2, height / 2);
   points = floop.makePoints();
+  console.assert(points.length > 0);
   drawPoints(points, true);
   // second pass for extra blur
   drawPoints(points, true);
@@ -179,6 +177,7 @@ function draw() {
     }
 
     floop.idle(IDLE_SPEED);
+    processed = true;
 
     return;
   }
@@ -187,6 +186,7 @@ function draw() {
 
   detecting = true;
   floop.compute(detections, DETECT_SPEED);
+  processed = true;
 }
 
 class FourierLoop {
@@ -296,7 +296,10 @@ class FourierLoop {
 // https://google.github.io/mediapipe/solutions/hands.html
 
 function onResults(results) {
-  detections = results;
+  if (processed){
+    detections = results;
+    processed = false;
+  }
 }
 
 function initModel() {
@@ -363,6 +366,7 @@ function drawPoints(points, enableCircle) {
 
 function showHands() {
   push();
+  // SELFIE MIRROR
   translate(width, 0);
   scale(-1, 1);
   noFill();
@@ -380,12 +384,9 @@ function showHands() {
       let l3 = hand[d3];
       let l4 = hand[d3 + 1];
 
-      beginShape();
-      vertex(l1.x * width, l1.y * height);
-      vertex(l2.x * width, l2.y * height);
-      vertex(l3.x * width, l3.y * height);
-      vertex(l4.x * width, l4.y * height);
-      endShape();
+      line(l1.x * width, l1.y * height, l2.x * width, l2.y * height);
+      line(l2.x * width, l2.y * height, l3.x * width, l3.y * height);
+      line(l3.x * width, l3.y * height, l4.x * width, l4.y * height);
       push();
       noStroke();
       fill(255, 255, 255, 100);
