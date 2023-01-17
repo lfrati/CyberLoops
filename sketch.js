@@ -1,4 +1,4 @@
-let t = 0;
+let T = 0;
 let detections = undefined;
 // let remote = true;
 let particles;
@@ -35,8 +35,10 @@ const IDLE_SPEED = 0.01; // floop interpolation speed while idle
 const IDLE_NOISE_MAG = 0.5; // magnitude of noise added to idle floop
 const IDLE_NOISE_SPEED = 0.01; // time scaling of noise sampling
 const NETWORK_SLOWDOWN = 60;
-const TIME_RATE = 3; // control the speed of floop planet movement (use to tweak particle generation)
+const TIME_RATE = 2; // control the speed of floop planet movement (use to tweak particle generation)
 const SENSITIVITY = 100; // increase the effect of hand movement
+
+const LIFESPAN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const features = [
   // FINGERS
@@ -92,7 +94,9 @@ function setup() {
   pixelDensity(1);
   noCursor();
   strokeCap(ROUND);
+  textAlign(CENTER);
   createCanvas(windowWidth, windowHeight);
+
   initModel();
 
   // size, border, foreground, background
@@ -104,29 +108,32 @@ function setup() {
 function draw() {
   // background(50); // TODO: tweak the shader brightness to use a non-black background
   background(0);
-  noStroke();
 
-  if (!detections && initializing) {
-    // Loading
+  if (millis() > LIFESPAN) {
+    location.reload();
+    // init(); // soft restart
+  }
+
+  if (!detections) {
+    // Loading model
     noStroke();
     fill(255);
     textSize(32);
-    textAlign(CENTER);
     text("Waking up", width / 2, height / 2);
     network.update(frameCount / NETWORK_SLOWDOWN);
     network.show();
     return;
   }
 
-  t += TIME_RATE;
-  if (t > Npoints) {
-    t = 0;
+  T += TIME_RATE;
+  if (T > Npoints) {
+    T = 0;
     floop.resampleIdle();
   }
 
-  // SELFIE MIRRORING
-  translate(width, 0); // move to far corner
-  scale(-1.0, 1.0); // flip x-axis backwards
+  // // SELFIE MIRRORING
+  // translate(width, 0); // move to far corner
+  // scale(-1.0, 1.0); // flip x-axis backwards
 
   let data = particles.prepareUniforms();
   // PARTICLES SHADER
@@ -138,21 +145,14 @@ function draw() {
   theShader.setUniform("colors", data.colors);
   shaderTexture.rect(0, 0, width, height);
   image(shaderTexture, 0, 0, width, height);
-  if (DEBUG) {
-    // debug print of particles
-    for (let i = 0; i < data.particleCount * 3; i += 3) {
-      let x = data.particles[i];
-      let y = data.particles[i + 1];
-      fill("pink");
-      circle(width / 2 + x, height / 2 + y, 8);
-    }
-  }
 
   // logo.show(true, HALF_PI);
-  logo.show(true);
+  logo.show();
 
   if (DEBUG) {
     image(video, 0, 0, video.width, video.height); // show user
+    let remaining_time = new Date(LIFESPAN - millis()).toISOString().slice(14,19)
+    text(remaining_time,  50, height - 30)
   }
 
   network.update(frameCount / NETWORK_SLOWDOWN);
@@ -172,13 +172,10 @@ function draw() {
   if (detections.multiHandLandmarks.length < 2) {
     if (detecting) {
       // STATE: DETECTION -> NO DETECTION
-      // noiseSeed();
-      // floop.resampleIdle();
-      // particles.reset();
+      floop.resampleIdle(); // start interpolating towards idle after losing detection
+      //floop.idleCoeffs = floop.coeffs; // persist floop for a bit after detection stops
       floop.noise_off = random(10000);
-      floop.idleCoeffs = floop.coeffs;
       detecting = false;
-      console.log("lost");
     }
 
     floop.idle(IDLE_SPEED);
@@ -188,12 +185,7 @@ function draw() {
 
   // --------------- BELOW HERE 2 HANDS HAVE BEEN DETECTED
 
-  if (!detecting) {
-    // STATE: NO DETECTION -> DETECTION
-    detecting = true;
-    console.log("detected");
-  }
-
+  detecting = true;
   floop.compute(detections, DETECT_SPEED);
 }
 
@@ -292,7 +284,7 @@ class FourierLoop {
     for (let i = 0; i <= Npoints; i++) {
       let p = this.fourier(i / Npoints);
       points.push(p);
-      if (i == t) {
+      if (i == T) {
         particles.move(p.x, p.y);
         particles.update();
       }
@@ -308,7 +300,6 @@ function onResults(results) {
 }
 
 function initModel() {
-  initializing = true; // horrible hack to make sure I call this, in draw I check this variable
   hands = new Hands({
     locateFile: (file) => {
       if (remote) {
@@ -358,7 +349,7 @@ function drawPoints(points, enableCircle) {
   for (let i in points) {
     let p = points[i];
     vertex(p.x, p.y);
-    if (enableCircle && i == t) {
+    if (enableCircle && i == T) {
       push();
       fill("white");
       noStroke();
@@ -371,6 +362,9 @@ function drawPoints(points, enableCircle) {
 }
 
 function showHands() {
+  push();
+  translate(width, 0);
+  scale(-1, 1);
   noFill();
   strokeWeight(4);
   stroke(255, 255, 255, 100);
@@ -400,4 +394,5 @@ function showHands() {
       pop();
     }
   }
+  pop();
 }
