@@ -104,13 +104,20 @@ class Logo {
       this.size / 5
     );
   }
-  show() {
-    image(
-      this.logo,
+  show(flip, rot) {
+    push();
+    if (flip) {
+      translate(width, 0);
+      scale(-1, 1);
+    }
+    translate(
       width - this.size - this.border,
-      height - this.size - this.border,
-      this.size,
-      this.size
+      height - this.size - this.border
     );
+    if (rot) {
+      rotate(rot);
+    }
+    image(this.logo, -this.size / 2, -this.size / 2, this.size, this.size);
+    pop();
   }
 }
