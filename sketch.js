@@ -7,18 +7,24 @@ let theShader;
 let shaderTexture;
 let detecting = false;
 /*
-LOG:
 15/01/2023:
 - Implemented fullscreen + resize. Had to re-initialize shader and worleynet with new size.
 - Hide cursor
 
-TODO:
-- window.location.reload() to periodically reload the sketch, to avoid nasty leaks.
-- I still haven't managed to track down that weird bug that sometimes make the sketch disappear. Haven't seen it strike on windows yet.
-- Spiky knuckles bug?
-- Cam orientation: fix? just deal with it sideways?
+17/01/2023:
 - Cam aspect ratio: stuff looks distorted?
-- Sparks too bright? Adjust color or number?
+  There is not much I can do, if I adjust the aspect ratio hands might disappear 
+  before touching the edges of the screen and that's worse
+- Sparks too bright? Adjust color or number? ->
+  Reduced the number of sparks.
+- Spiky knuckles bug?
+  Fixed. beginShape -> line
+- window.location.reload() to periodically reload the sketch, to avoid nasty leaks.
+  Done. Added timer information to the debug info. Enable with 'd'.
+
+TODO:
+- I still haven't managed to track down that weird bug that sometimes make the sketch disappear. 
+- Cam orientation: fix? just deal with it sideways?
 - After changing the fps + pixelDensity does stuff move too fast? 
 */
 
