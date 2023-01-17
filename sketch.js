@@ -21,20 +21,20 @@ TODO:
 - After changing the fps + pixelDensity does stuff move too fast? 
 */
 
-const DEBUG = false;
+let DEBUG = false;
 
 const Npoints = 1000;
 const remote = false;
 const c = "rgb(3, 186, 252)";
 const colorScheme = ["#E69F66", "#DF843A", "#D8690F", "#B1560D", "#8A430A"];
-const MAX_PARTICLE_COUNT = 70;
-const MAX_TRAIL_COUNT = 30;
+const MAX_PARTICLE_COUNT = 50;
+const MAX_TRAIL_COUNT = 20;
 
 const DETECT_SPEED = 0.05; // floop interpolation speed while detecting
 const IDLE_SPEED = 0.01; // floop interpolation speed while idle
 const IDLE_NOISE_MAG = 0.5; // magnitude of noise added to idle floop
 const IDLE_NOISE_SPEED = 0.01; // time scaling of noise sampling
-const NETWORK_SLOWDOWN = 40;
+const NETWORK_SLOWDOWN = 60;
 const TIME_RATE = 3; // control the speed of floop planet movement (use to tweak particle generation)
 const SENSITIVITY = 100; // increase the effect of hand movement
 
@@ -58,11 +58,18 @@ const features = [
 ];
 
 const Nfeatures = features.length * 2; // 2 hands
-const worleySpacing = 100;
+const WORLEY_SPACING = 100;
+const WORLEY_HOLE = 300;
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   init();
+}
+
+function keyTyped() {
+  if (key == "d") {
+    DEBUG = !DEBUG;
+  }
 }
 
 function mousePressed() {
@@ -76,7 +83,7 @@ function init() {
   theShader = initShader(shaderTexture);
   particles = new Particles(8, 0.5);
   floop = new FourierLoop(Nfeatures);
-  network = new WNetwork(worleySpacing, 200, width, height);
+  network = new WNetwork(WORLEY_SPACING, WORLEY_HOLE, width, height);
 }
 
 function setup() {
@@ -87,7 +94,7 @@ function setup() {
   strokeCap(ROUND);
   createCanvas(windowWidth, windowHeight);
   initModel();
-  
+
   // size, border, foreground, background
   logo = new Logo(20, 8, 180, -1);
 
@@ -104,11 +111,10 @@ function draw() {
     noStroke();
     fill(255);
     textSize(32);
-    text(
-      "Model loading." + ".".repeat(round(frameCount / 20)),
-      100,
-      height / 2
-    );
+    textAlign(CENTER);
+    text("Waking up", width / 2, height / 2);
+    network.update(frameCount / NETWORK_SLOWDOWN);
+    network.show();
     return;
   }
 
@@ -117,8 +123,6 @@ function draw() {
     t = 0;
     floop.resampleIdle();
   }
-
-  logo.show();
 
   // SELFIE MIRRORING
   translate(width, 0); // move to far corner
@@ -140,12 +144,15 @@ function draw() {
       let x = data.particles[i];
       let y = data.particles[i + 1];
       fill("pink");
-      circle(width / 2 + x, height / 2 + y, 4);
+      circle(width / 2 + x, height / 2 + y, 8);
     }
   }
 
+  // logo.show(true, HALF_PI);
+  logo.show(true);
+
   if (DEBUG) {
-    image(video, 0, 0, width, height); // show user
+    image(video, 0, 0, video.width, video.height); // show user
   }
 
   network.update(frameCount / NETWORK_SLOWDOWN);
@@ -326,8 +333,8 @@ function initModel() {
     onFrame: async () => {
       await hands.send({ image: video.elt });
     },
-    width: width,
-    height: height,
+    width: video.width,
+    height: video.height,
   });
   cam.start();
 }
@@ -378,6 +385,7 @@ function showHands() {
       let l2 = hand[d2];
       let l3 = hand[d3];
       let l4 = hand[d3 + 1];
+
       beginShape();
       vertex(l1.x * width, l1.y * height);
       vertex(l2.x * width, l2.y * height);
