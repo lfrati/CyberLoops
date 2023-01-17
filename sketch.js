@@ -1,11 +1,3 @@
-let T = 0;
-let detections = undefined;
-let processed = true;
-// let remote = true;
-let particles;
-let theShader;
-let shaderTexture;
-let detecting = false;
 /*
 15/01/2023:
 - Implemented fullscreen + resize. Had to re-initialize shader and worleynet with new size.
@@ -29,9 +21,15 @@ TODO:
 */
 
 let DEBUG = false;
+let T = 0;
+let detections = undefined;
+let processed = true;
+let particles;
+let theShader;
+let shaderTexture;
+let detecting = false;
 
 const Npoints = 1000;
-const remote = false;
 const c = "rgb(3, 186, 252)";
 const colorScheme = ["#E69F66", "#DF843A", "#D8690F", "#B1560D", "#8A430A"];
 const MAX_PARTICLE_COUNT = 50;
@@ -45,7 +43,7 @@ const NETWORK_SLOWDOWN = 60;
 const TIME_RATE = 2; // control the speed of floop planet movement (use to tweak particle generation)
 const SENSITIVITY = 100; // increase the effect of hand movement
 
-const LIFESPAN = 5 * 60 * 1000; // 5 minutes in milliseconds
+const LIFESPAN = .5 * 60 * 1000; // 5 minutes in milliseconds
 
 const features = [
   // FINGERS
@@ -84,42 +82,47 @@ function keyTyped() {
 function mousePressed() {
   let fs = fullscreen();
   fullscreen(!fs);
-  //document.querySelector("body").webkitRequestFullscreen();
+  // document.querySelector("body").webkitRequestFullscreen();
+  // document.body.requestFullscreen();
+  // fullscreen();
 }
 
 function init() {
+  console.log("sketch re-initializing...")
   shaderTexture = createGraphics(width, height, WEBGL);
   theShader = initShader(shaderTexture);
   particles = new Particles(8, 0.5);
   floop = new FourierLoop(Nfeatures);
   network = new WNetwork(WORLEY_SPACING, WORLEY_HOLE, width, height);
+  // size, border, foreground, background
+  logo = new Logo(20, 8, 180, -1);
+  processed = true; // make sure the ai starts sending new detections
+  frameCount = 0; // safety: worley net uses this value to update. Avoid huge numbers.
+  console.log("sketch re-initialized.")
 }
 
 function setup() {
-  fullscreen();
   frameRate(60);
   pixelDensity(1);
   noCursor();
   strokeCap(ROUND);
   textAlign(CENTER);
+
   createCanvas(windowWidth, windowHeight);
+  video = createCapture(VIDEO);
+  video.hide();
 
   initModel();
-
-  // size, border, foreground, background
-  logo = new Logo(20, 8, 180, -1);
-
   init();
+
+  // I wish I could just window.location.reload();
+  // but for security reasons the browser doesn't let code
+  // turn on fullscreen without user interaction...
+  setInterval(init, LIFESPAN);
 }
 
 function draw() {
-  // background(50); // TODO: tweak the shader brightness to use a non-black background
   background(0);
-
-  if (millis() > LIFESPAN) {
-    location.reload();
-    // init(); // soft restart
-  }
 
   if (!detections) {
     // Loading model
@@ -149,13 +152,14 @@ function draw() {
   shaderTexture.rect(0, 0, width, height);
   image(shaderTexture, 0, 0, width, height);
 
-  // logo.show(true, HALF_PI);
+  // logo.show(HALF_PI);
   logo.show();
 
   if (DEBUG) {
     image(video, 0, 0, video.width, video.height); // show user
-    let remaining_time = new Date(LIFESPAN - millis()).toISOString().slice(14,19)
-    text(remaining_time,  50, height - 30)
+    let remaining = LIFESPAN - (millis() % LIFESPAN);
+    let formatted = new Date(remaining).toISOString().slice(14, 19);
+    text(formatted, 50, height - 30); // show time before next reset
   }
 
   network.update(frameCount / NETWORK_SLOWDOWN);
@@ -302,7 +306,7 @@ class FourierLoop {
 // https://google.github.io/mediapipe/solutions/hands.html
 
 function onResults(results) {
-  if (processed){
+  if (processed) {
     detections = results;
     processed = false;
   }
@@ -311,9 +315,6 @@ function onResults(results) {
 function initModel() {
   hands = new Hands({
     locateFile: (file) => {
-      if (remote) {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-      }
       return `@mediapipe/hands/${file}`;
     },
   });
@@ -325,9 +326,6 @@ function initModel() {
     minTrackingConfidence: 0.7,
   });
   hands.onResults(onResults);
-
-  video = createCapture(VIDEO);
-  video.hide();
 
   cam = new Camera(video.elt, {
     onFrame: async () => {
