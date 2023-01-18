@@ -23,7 +23,6 @@ TODO:
 let DEBUG = false;
 let T = 0;
 let detections = undefined;
-let processed = true;
 let particles;
 let theShader;
 let shaderTexture;
@@ -187,8 +186,6 @@ function draw() {
     }
 
     floop.idle(IDLE_SPEED);
-    processed = true;
-
     return;
   }
 
@@ -196,7 +193,6 @@ function draw() {
 
   detecting = true;
   floop.compute(detections, DETECT_SPEED);
-  processed = true;
 }
 
 class FourierLoop {
@@ -306,10 +302,7 @@ class FourierLoop {
 // https://google.github.io/mediapipe/solutions/hands.html
 
 function onResults(results) {
-  if (processed) {
     detections = results;
-    processed = false;
-  }
 }
 
 function initModel() {
