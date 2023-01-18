@@ -95,7 +95,6 @@ function init() {
   network = new WNetwork(WORLEY_SPACING, WORLEY_HOLE, width, height);
   // size, border, foreground, background
   logo = new Logo(20, 8, 180, -1);
-  processed = true; // make sure the ai starts sending new detections
   frameCount = 0; // safety: worley net uses this value to update. Avoid huge numbers.
   console.log("sketch re-initialized.")
 }
