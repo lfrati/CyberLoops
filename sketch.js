@@ -42,7 +42,7 @@ const NETWORK_SLOWDOWN = 60;
 const TIME_RATE = 2; // control the speed of floop planet movement (use to tweak particle generation)
 const SENSITIVITY = 100; // increase the effect of hand movement
 
-const LIFESPAN = .5 * 60 * 1000; // 5 minutes in milliseconds
+const LIFESPAN = 30 * 1000; // 5 minutes in milliseconds
 
 const features = [
   // FINGERS
@@ -69,6 +69,8 @@ const WORLEY_HOLE = 300;
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+  shaderTexture.remove();
+  shaderTexture = createGraphics(width, height, WEBGL);
   init();
 }
 
@@ -87,8 +89,6 @@ function mousePressed() {
 }
 
 function init() {
-  console.log("sketch re-initializing...")
-  shaderTexture = createGraphics(width, height, WEBGL);
   theShader = initShader(shaderTexture);
   particles = new Particles(8, 0.5);
   floop = new FourierLoop(Nfeatures);
@@ -96,7 +96,7 @@ function init() {
   // size, border, foreground, background
   logo = new Logo(20, 8, 180, -1);
   frameCount = 0; // safety: worley net uses this value to update. Avoid huge numbers.
-  console.log("sketch re-initialized.")
+  console.log("sketch re-initialized.");
 }
 
 function setup() {
@@ -107,6 +107,7 @@ function setup() {
   textAlign(CENTER);
 
   createCanvas(windowWidth, windowHeight);
+  shaderTexture = createGraphics(width, height, WEBGL);
   video = createCapture(VIDEO);
   video.hide();
 
@@ -301,7 +302,7 @@ class FourierLoop {
 // https://google.github.io/mediapipe/solutions/hands.html
 
 function onResults(results) {
-    detections = results;
+  detections = results;
 }
 
 function initModel() {
